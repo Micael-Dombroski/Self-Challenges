@@ -29,6 +29,6 @@ public class Main {
         for(String s: morse) {
             backToText += ms.toASCII(s);
         }
-        System.out.println("Recoverd text: " + backToText);
+        System.out.println("Recovered text: " + backToText);
     }
 }
