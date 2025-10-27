@@ -238,7 +238,7 @@ public class GerenciadorGrafo {
             String nome = campoVNome.getText().trim();
             if(!nome.isEmpty()) {
                 if(!vertices.containsKey(nome)) {
-                    JOptionPane.showMessageDialog(frame, "Vértice não existe existe!");
+                    JOptionPane.showMessageDialog(frame, "Vértice não existe!");
                 } else {
                     MutableNode vertice = mutNode(nome);
                     vertices.put(nome, vertice);
