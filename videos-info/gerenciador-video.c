@@ -215,13 +215,15 @@ void resgatarLista(Lista *lista) {
     f = fopen("videos.txt", "r");
     if(f) {
         Video video;
-        while(fscanf(f, "%19[^;];%d:%d:%d;%d;%d;%199[^\n]\n", video.titulo, &video.duracao.horas, &video.duracao.minutos, 
+        while(fscanf(f, "%19[^;];%d:%d:%d;%d;%d;%199[^\n]", video.titulo, &video.duracao.horas, &video.duracao.minutos, 
         &video.duracao.segundos, &video.curtidas, &video.vizualizacoes, video.descricao) == 7) 
         {
             addVideo(lista, video);
+            fgetc(f);
         }
         printf("\nLista resgatada com sucesso!");
         fclose(f);
+        remove("videos.txt");
     } else {
         printf("\n\tERRO: Não foi possível ler o arquivo\n");
     }
@@ -342,6 +344,8 @@ int main(void) {
             break;
         }
     } while(opcao != 0);
+
+    salvarLista(lista);
 
     return EXIT_SUCCESS;
 }
