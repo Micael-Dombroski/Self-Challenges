@@ -9,7 +9,7 @@ typedef struct {
 typedef struct {
     char titulo[20];
     char descricao[200];
-    int curtidas, vizualizacoes;
+    int likes, dislikes, vizualizacoes;
     Tempo duracao;
 } Video;
 
@@ -27,7 +27,7 @@ void limparBuffer() {
     while((getchar()) != '\n');
 }
 
-int lerInteiro() {
+int lerInteiroPositivo() {
     int num, ret;
     do {
         ret = scanf("%d", &num);
@@ -40,11 +40,11 @@ Tempo lerTempo() {
     Tempo t;
     printf("Informe a duracao do video\n");
     printf("Horas: ");
-    t.horas = lerInteiro();
+    t.horas = lerInteiroPositivo();
     printf("Minutos: ");
-    t.minutos = lerInteiro();
+    t.minutos = lerInteiroPositivo();
     printf("Segundos: ");
-    t.segundos = lerInteiro();
+    t.segundos = lerInteiroPositivo();
     if(t.segundos > 59) {
         while(t.segundos > 59) {
             t.segundos -= 60;
@@ -89,10 +89,12 @@ Video lerVideo() {
     v.descricao[strcspn(v.descricao, ";")] = v.descricao[strcspn(v.descricao, ";")] == ';' ? ',' : '\0';
     limparBuffer();
     v.duracao = lerTempo();
-    printf("Informe o numero de curtidas: ");
-    v.curtidas = lerInteiro();
+    printf("Informe o numero de likes: ");
+    v.likes = lerInteiroPositivo();
+    printf("Informe o numero de dislikes: ");
+    v.dislikes = lerInteiroPositivo();
     printf("Informe o numero de visualizacoes: ");
-    v.vizualizacoes = lerInteiro();
+    v.vizualizacoes = lerInteiroPositivo();
     return v;
 }
 
@@ -105,8 +107,8 @@ void printVideo(Video *v) {
         printf("Titulo: %s\n", v -> titulo);
         printf("Duracao: ");
         printTempo(v -> duracao);
-        printf("\tCurtidas: %d\tVisualizacoes: %d\nDescricao: %s\n", 
-            v -> curtidas, v -> vizualizacoes, v -> descricao);
+        printf("\tVisualizacoes: %d\nLikes: %d\tDislikes: %d\nDescricao: %s\n", 
+            v -> vizualizacoes, v -> likes, v -> dislikes, v -> descricao);
     }
 }
 
@@ -195,8 +197,8 @@ void salvarLista(Lista *lista) {
             No *no = lista -> comeco;
             while(no) {
                 Video video = no -> video;
-                fprintf(f, "%s;%d:%d:%d;%d;%d;%s\n", video.titulo, video.duracao.horas, video.duracao.minutos, 
-                    video.duracao.segundos, video.curtidas, video.vizualizacoes,
+                fprintf(f, "%s;%d:%d:%d;%d;%d;%d;%s\n", video.titulo, video.duracao.horas, video.duracao.minutos, 
+                    video.duracao.segundos, video.likes, video.dislikes, video.vizualizacoes,
                     video.descricao);
                 no = no -> proximo;
             }
@@ -215,18 +217,35 @@ void resgatarLista(Lista *lista) {
     f = fopen("videos.txt", "r");
     if(f) {
         Video video;
-        while(fscanf(f, "%19[^;];%d:%d:%d;%d;%d;%199[^\n]", video.titulo, &video.duracao.horas, &video.duracao.minutos, 
-        &video.duracao.segundos, &video.curtidas, &video.vizualizacoes, video.descricao) == 7) 
+        while(fscanf(f, "%19[^;];%d:%d:%d;%d;%d;%d;%199[^\n]", video.titulo, &video.duracao.horas, &video.duracao.minutos, 
+        &video.duracao.segundos, &video.likes, &video.dislikes, &video.vizualizacoes, video.descricao) == 8) 
         {
             addVideo(lista, video);
             fgetc(f);
         }
         printf("\nLista resgatada com sucesso!");
         fclose(f);
-        remove("videos.txt");
     } else {
         printf("\n\tERRO: Não foi possível ler o arquivo\n");
     }
+}
+
+Tempo somarTempos(Tempo t1, Tempo t2) {
+    Tempo soma;
+    soma.horas = 0;
+    soma.minutos = 0;
+    soma.segundos = t1.segundos + t2.segundos;
+    while(soma.segundos > 59) {
+        soma.segundos -= 60;
+        soma.minutos++;
+    }
+    soma.minutos += t1.minutos + t2.minutos;
+    while(soma.minutos > 59) {
+        soma.minutos -= 60;
+        soma.horas++;
+    }
+    soma.horas += t1.horas + t2.horas;
+    return soma;
 }
 
 void informacoesExtras(Lista *lista) {
@@ -234,12 +253,19 @@ void informacoesExtras(Lista *lista) {
         No *no = lista -> comeco;
         Video vMaisLongo = no -> video;
         Video vMaisCurto = no -> video;
-        Video vMaisCurtido = no -> video;
+        Video vMaisGostado = no -> video;
+        Video vMenosGostado = no -> video;
         Video vMaisVisualizado = no -> video;
-        int totalCurtidas = 0;
+        int totalLikes = 0;
+        int totalDislikes = 0;
         int totalVisualizacoes = 0;
         double mediaVisualizacoes = 0.0;
-        double mediaCurtidas = 0.0;
+        double mediaLikes = 0.0;
+        double mediaDislikes = 0.0;
+        Tempo tempoTotalVideos;
+        tempoTotalVideos.horas = 0;
+        tempoTotalVideos.minutos = 0;
+        tempoTotalVideos.segundos = 0;
         while(no) {
             if(tempoMaisCurto(no -> video.duracao, vMaisCurto.duracao)) {
                 vMaisCurto = no -> video;
@@ -247,26 +273,36 @@ void informacoesExtras(Lista *lista) {
             if(!tempoMaisCurto(no -> video.duracao, vMaisLongo.duracao)) {
                 vMaisLongo = no -> video;
             }
-            if(vMaisCurtido.curtidas < no -> video.curtidas) {
-                vMaisCurtido = no -> video;
+            if(vMaisGostado.likes < no -> video.likes) {
+                vMaisGostado = no -> video;
+            }
+            if(vMenosGostado.dislikes < no -> video.dislikes) {
+                vMenosGostado = no -> video;
             }
             if(vMaisVisualizado.vizualizacoes < no -> video.vizualizacoes) {
                 vMaisVisualizado = no -> video;
             }
-            totalCurtidas += no -> video.curtidas;
+            totalLikes += no -> video.likes;
+            totalDislikes += no -> video.dislikes;
             totalVisualizacoes += no -> video.vizualizacoes;
+            tempoTotalVideos = somarTempos(tempoTotalVideos, no -> video.duracao);
             no = no -> proximo;
         }
-        mediaCurtidas = (double) totalCurtidas / lista -> tamanho;
+        mediaLikes = (double) totalLikes / lista -> tamanho;
+        mediaDislikes = (double) totalDislikes / lista -> tamanho;
         mediaVisualizacoes = (double) totalVisualizacoes / lista -> tamanho;
 
         printf("\n------Informacoes Extras------\n");
         printf("Total de videos: %d\n", lista -> tamanho);
         printf("\nTotal de visualizacoes: %d\n", totalVisualizacoes);
-        printf("\nTotal de curtidas: %d\n", totalCurtidas);
+        printf("\nTotal de likes: %d\n", totalLikes);
+        printf("\nTotal de dislikes: %d\n", totalDislikes);
         printf("\nMedia de visualizacoes: %.2f\n", mediaVisualizacoes);
-        printf("\nMedia de curtidas: %.2f\n", mediaCurtidas);
-        printf("------------------------------\n");
+        printf("\nMedia de likes: %.2f\n", mediaLikes);
+        printf("\nMedia de dislikes: %.2f\n", mediaDislikes);
+        printf("\nTempo total de conteudo: ");
+        printTempo(tempoTotalVideos);
+        printf("\n------------------------------\n");
         printf("Video mais longo: \n");
         printVideo(&vMaisLongo);
         printf("------------------------------\n");
@@ -276,8 +312,11 @@ void informacoesExtras(Lista *lista) {
         printf("Video mais visualizado: \n");
         printVideo(&vMaisVisualizado);
         printf("------------------------------\n");
-        printf("Video mais curtido: \n");
-        printVideo(&vMaisCurtido);
+        printf("Video mais gostado: \n");
+        printVideo(&vMaisGostado);
+        printf("------------------------------\n");
+        printf("Video menos gostado: \n");
+        printVideo(&vMenosGostado);
         printf("------------------------------\n");
     } else {
         printf("Nenhuma informacao extra disponivel no momento\n");
@@ -287,13 +326,14 @@ void informacoesExtras(Lista *lista) {
 int main(void) {
     Lista *lista = NULL;
     iniciarLista(&lista);
+    resgatarLista(lista);
     int opcao;
     char titulo[20];
     do {
         printf("\n\t---Menu---\n");
-        printf("\t0 - Sair\n\t1 - Adicionar\n\t2 - Buscar\n\t3 - Listar\n\t4 - Remover\n\t5 - Salvar\n\t6 - Resgatar\n\t7 - Extras\n");
+        printf("\t0 - Sair\n\t1 - Adicionar\n\t2 - Buscar\n\t3 - Listar\n\t4 - Remover\n\t5 - Salvar\n\t6 - Extras\n");
         printf("\t-> ");
-        opcao = lerInteiro();
+        opcao = lerInteiroPositivo();
         switch (opcao)
         {
         case 0:
@@ -301,6 +341,7 @@ int main(void) {
             break;
         case 1:
             addVideo(lista, lerVideo());
+            salvarLista(lista);
             break;
         case 2:
             printf("Informe o titulo do video que deseja buscar: ");
@@ -329,14 +370,12 @@ int main(void) {
             } else {
                 printf("\n\tVideo nao encontrado\n");
             }
+            salvarLista(lista);
             break;
         case 5:
             salvarLista(lista);
             break;
         case 6:
-            resgatarLista(lista);
-            break;
-        case 7:
             informacoesExtras(lista);
             break;
         default:
