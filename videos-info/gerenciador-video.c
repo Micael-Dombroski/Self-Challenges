@@ -179,9 +179,10 @@ No* removerVideo(Lista *lista, char *titulo) {
             while(suporte -> proximo && strcmp(titulo, suporte -> proximo -> video.titulo) != 0) {
                 suporte = suporte -> proximo;
             }
-            if(suporte) {
+            if(suporte -> proximo) {
                 no = suporte -> proximo;
                 suporte -> proximo = no -> proximo;
+                lista -> tamanho--;
             }
         }
     }
