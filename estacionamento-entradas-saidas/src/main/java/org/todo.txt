@@ -1,0 +1,4 @@
+TODO LIST
+-Salvar em CSV
+-Resgatar informações de arquivo CSV
+-Criar Interface com SWING
